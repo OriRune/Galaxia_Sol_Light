@@ -1,0 +1,44 @@
+{
+  "fixtures": [
+    {
+      "id": "barredSpiral-120000",
+      "digest": "7d3f9fda0a1d818ea52cd7929d2dea8d195c291684b3a4cafe0a730ec74fb22d"
+    },
+    {
+      "id": "barredSpiral-500",
+      "digest": "00d388e3e79e79abd8d4e1966308ce8e6adb24d0831e77f97cd1b7ea5ab672fa"
+    },
+    {
+      "id": "dwarf-120000",
+      "digest": "37872c08e53e909c5f29d25ee4cfb11928f0f2b4ba7e2572a82905ab5edd4e08"
+    },
+    {
+      "id": "dwarf-500",
+      "digest": "bb0ec3b4de4069fb0e13e50583ced02bff4b882d392ffd2f62e48bda0476dbcc"
+    },
+    {
+      "id": "elliptical-120000",
+      "digest": "eeb78dd359494003bf90effbc37a9ac18df4c9f5635f367b35d27a56f25f16e7"
+    },
+    {
+      "id": "elliptical-500",
+      "digest": "864e70198aad1f0dbbeff32a58bc477b3f17c2600c926b9a35382a061479a261"
+    },
+    {
+      "id": "irregular-120000",
+      "digest": "897875cc05c69d09af25af70a5833bc58124046340ffdc4075154e782b0b26dc"
+    },
+    {
+      "id": "irregular-500",
+      "digest": "1feb371a75c4f717e719942b9a126991ba184f608156683ea38f99afad7369ec"
+    },
+    {
+      "id": "spiral-120000",
+      "digest": "22528c6d96f41a51f477004115a307613c84bd82ea51a8f95b0dc139475d7b00"
+    },
+    {
+      "id": "spiral-500",
+      "digest": "43d6305ab95171ee0b371c08aa004892d518b073729cef0673be08e2e1c0a8e2"
+    }
+  ]
+}

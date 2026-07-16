@@ -1,0 +1,60 @@
+{
+  "recordedAt": "2026-07-15T14:08:36.823Z",
+  "os": {
+    "platform": "win32",
+    "name": "Windows_NT",
+    "version": "Windows 11 Home",
+    "release": "10.0.26200",
+    "architecture": "arm64"
+  },
+  "runtime": {
+    "node": "v24.16.0",
+    "npm": "11.13.0"
+  },
+  "dependencyLockSha256": "f916f6aa34b3e64f1b224eb000675ddac3f8619afe99360a3693d217de41b371",
+  "browsers": [
+    {
+      "name": "Playwright Chromium",
+      "version": "149.0.7827.55",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "devicePixelRatio": 1,
+      "webgl": {
+        "vendor": "Google Inc. (Google)",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      }
+    },
+    {
+      "name": "Playwright Firefox",
+      "version": "151.0",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "devicePixelRatio": 1,
+      "webgl": {
+        "vendor": "Google Inc. (Unknown)",
+        "renderer": "ANGLE (Unknown, Generic Renderer Direct3D11 vs_5_0 ps_5_0), or similar",
+        "version": "WebGL 2.0"
+      }
+    },
+    {
+      "name": "Microsoft Edge",
+      "version": "150.0.4078.65",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "devicePixelRatio": 1,
+      "webgl": {
+        "vendor": "Google Inc. (Qualcomm)",
+        "renderer": "ANGLE (Qualcomm, Qualcomm(R) Adreno(TM) X1-85 GPU (0x36334330) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      }
+    }
+  ],
+  "gitCommit": null
+}

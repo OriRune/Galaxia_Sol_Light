@@ -1,0 +1,9 @@
+export const DT = 1 / 60;
+export const TIDAL_DIFFERENTIAL_GAIN = 5;
+export const FRICTION_GAMMA_MAXIMUM = 24;
+export const FRICTION_SPEED_SCALE = 3;
+export const MAXIMUM_HALF_FRICTION_FRACTION = 0.2;
+export const ENCOUNTER_THRESHOLD_MULTIPLIER = 2;
+export const MERGER_SPEED_THRESHOLD = 1;
+export const MAX_STEPS_PER_TASK = 1;
+export const HISTORY_BOUNDARY_MS = 100;

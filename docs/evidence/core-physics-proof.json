@@ -1,0 +1,46 @@
+{
+  "tuple": {
+    "dt": 0.016666666666666666,
+    "baseG": 64,
+    "extendedSofteningFraction": 0.15,
+    "frictionGamma": 24,
+    "frictionSpeedScale": 3,
+    "frictionSpeedExponent": 8,
+    "maximumHalfFrictionFraction": 0.2,
+    "mergerSpeed": 1
+  },
+  "defaultAttraction": {
+    "separation": 94.91200876780859,
+    "decreaseRatio": 0.40679994520119633
+  },
+  "scenario5": {
+    "separation": 122.57215338056142,
+    "rotationDegrees": 104.58194127081758,
+    "merged": false
+  },
+  "slowCapture": {
+    "mergeTime": 139.96666666666667,
+    "relativeSpeed": 0.6954644260007617
+  },
+  "fastFlyby": {
+    "minimumFirstPassSpeedInsideMergerDistance": 16.255132925545436,
+    "mergedBeforeSix": false,
+    "eventualMergeTime": 24.566666666666666
+  },
+  "merger": {
+    "id": "m-7-612532d3-0",
+    "seed": 1629827795,
+    "starCount": 5000,
+    "size": 64.03124237432849,
+    "mass": 50,
+    "spin": 0,
+    "blackHole": true,
+    "name": "Alpha + Beta",
+    "x": 0.6,
+    "y": 0,
+    "vx": 0.02,
+    "vy": -0.08
+  },
+  "maximumMomentumResidual": 0,
+  "maximumMomentumTolerance": 2.7043837295325546e-8
+}

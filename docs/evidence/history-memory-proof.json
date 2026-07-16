@@ -1,0 +1,18 @@
+{
+  "starCount": 120000,
+  "keyframes": 31,
+  "undoSnapshots": 20,
+  "cacheEntries": 10,
+  "cacheEvictions": 9,
+  "denseCacheEntries": 10,
+  "denseEvictions": 290,
+  "styleBlocks": 31,
+  "latestStyleReferenceCount": 22,
+  "ownerSlotsMatch": true,
+  "originalDigest": "45aec475c6f8c378e80339b561e277171b09c9457d4a91db594fc100a399a87a",
+  "restoredDigest": "45aec475c6f8c378e80339b561e277171b09c9457d4a91db594fc100a399a87a",
+  "retainedBytes": 149880000,
+  "transientBytes": 151800000,
+  "retainedLimitBytes": 201326592,
+  "transientLimitBytes": 234881024
+}

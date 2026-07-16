@@ -1,0 +1,36 @@
+{
+  "status": "pass",
+  "selectedTuple": {
+    "dt": 0.016666666666666666,
+    "baseG": 64,
+    "extendedSofteningFraction": 0.15,
+    "tidalGain": 5,
+    "frictionGamma": 24,
+    "frictionSpeedScale": 3,
+    "frictionSpeedExponent": 8,
+    "maximumHalfFrictionFraction": 0.2,
+    "mergerSpeed": 1
+  },
+  "fallbackGrid": {
+    "definedTupleCount": 324,
+    "evaluatedTupleCount": 0,
+    "reason": "The required starting tuple passed every core and star margin gate."
+  },
+  "coreReferences": {
+    "defaultAttractionSeparation": 94.91200876780859,
+    "scenario5Separation": 122.57215338056142,
+    "scenario5RotationDegrees": 104.58194127081758,
+    "slowCaptureMergeTime": 139.96666666666667,
+    "slowCaptureRelativeSpeed": 0.6954644260007617,
+    "fastFlybyFirstPassMinimumSpeed": 16.255132925545436,
+    "fastFlybyEventualMergeTime": 24.56666666666667
+  },
+  "starMargins": {
+    "firstLightRadiusBand": "pass",
+    "firstLightRetentionAtLeast97Percent": "pass",
+    "scenario5RadiusGrowthAtLeast12Percent": "pass",
+    "blackHoleInnerSpeedAtLeast5Percent": "pass",
+    "ownerAccelerationContract": "pass"
+  },
+  "crossBrowserGenerationDigests": "pass"
+}

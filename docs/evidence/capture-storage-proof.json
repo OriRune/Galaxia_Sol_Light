@@ -1,0 +1,40 @@
+{
+  "chromium": {
+    "width": 1920,
+    "height": 1080,
+    "frameCount": 300,
+    "webpSupported": true,
+    "mimeType": "image/webp",
+    "p95BlobBytes": 75330,
+    "p95ToBlobMs": 185,
+    "p95IndexedDbWriteMs": 2.300000000745058,
+    "maximumInFlight": 2,
+    "missedSlotsWhenSaturated": 1,
+    "measuredPartCount": 1,
+    "measuredLargestPartBytes": 21900734,
+    "streamedSpikePartBytes": 66155772,
+    "projectedFullSlotPartCount": 5,
+    "peakOwnedBytes": 82970562,
+    "fallbackClicks": 1,
+    "spikeDataDeleted": true
+  },
+  "firefox": {
+    "width": 1920,
+    "height": 1080,
+    "frameCount": 300,
+    "webpSupported": true,
+    "mimeType": "image/webp",
+    "p95BlobBytes": 76018,
+    "p95ToBlobMs": 217,
+    "p95IndexedDbWriteMs": 9,
+    "maximumInFlight": 2,
+    "missedSlotsWhenSaturated": 1,
+    "measuredPartCount": 1,
+    "measuredLargestPartBytes": 21983254,
+    "streamedSpikePartBytes": 66179826,
+    "projectedFullSlotPartCount": 5,
+    "peakOwnedBytes": 82996680,
+    "fallbackClicks": 1,
+    "spikeDataDeleted": true
+  }
+}

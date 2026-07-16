@@ -4,7 +4,9 @@ Recorded: 2026-07-16.
 
 ## Release-gate summary
 
-Milestone 9 is green. The complete Windows and Linux verification records are in [PLATFORM_RESULTS.md](PLATFORM_RESULTS.md). The current suite passes 293 unit tests, 46 browser tests, nineteen Chromium E2E tests, nineteen Firefox E2E tests, and nineteen system Edge E2E tests after the Task 9.5 additions. Production dependencies report zero known vulnerabilities with `npm audit --omit=dev`.
+Milestone 9 is green. The complete Windows and Linux verification records are in [PLATFORM_RESULTS.md](PLATFORM_RESULTS.md). The current contiguous `npm run verify` passes 296 unit tests, 51 Chromium browser tests, nineteen Chromium E2E tests, and nineteen Firefox E2E tests. The current merged coverage is 97.67/96.49/91.18 for domain, 99.20/95.88/97.44 for generation, 96.14/91.16/95.87 for simulation, and 90.29/80.03/90.25 overall (statements/branches/functions). Production dependencies report zero known vulnerabilities with `npm audit --omit=dev`.
+
+The repository is a locally and cross-browser verified release candidate. Authenticated Vercel preview and production deployment remain owner-operated Tasks 10.2 and 10.3 by explicit user instruction; no production URL or deployment ID is claimed in this report.
 
 ## Normative requirement evidence
 
@@ -22,7 +24,7 @@ Milestone 9 is green. The complete Windows and Linux verification records are in
 | R-RELY-02                                                        | scene/camera tests and Chromium/Firefox context-loss restoration test                                       | Pass   |
 | R-PLATFORM-01                                                    | [PLATFORM_RESULTS.md](PLATFORM_RESULTS.md)                                                                  | Pass   |
 
-The detailed packet-to-requirement trace is preserved in `docs/handoffs/0.1-*` through `docs/handoffs/9.5-*`; test titles retain the normative IDs.
+The detailed packet-to-requirement trace is preserved in `docs/handoffs/0.1-*` through `docs/handoffs/10.3-*`; test titles retain the normative IDs. The 10.2 and 10.3 records are deployment procedures with owner-action status, not fabricated deployment evidence.
 
 ## Acceptance scenarios
 
@@ -66,4 +68,4 @@ All six production fixture runs exceed 30 FPS and remain within the 50 ms frame-
 
 ## Known non-conformance
 
-None. No exit-gate violation or known high-severity correctness, data-loss, crash, or unbounded-memory issue remains open.
+No known application conformance issue remains. The Milestone 10 hosted-production exit gate is pending the owner-operated Vercel preview and production steps recorded in Tasks 10.2 and 10.3.

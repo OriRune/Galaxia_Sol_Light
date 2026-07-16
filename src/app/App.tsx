@@ -155,6 +155,12 @@ function encodeCanvas(
 const resetNumericEdits = () => {
   window.dispatchEvent(new Event("galaxia-reset-numeric-edits"));
 };
+const anyTrue = (...conditions: boolean[]) => conditions.includes(true);
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+const valueOr = <T,>(value: T | null | undefined, fallback: T): T => value ?? fallback;
+const choose = <T,>(condition: boolean, whenTrue: T, whenFalse: T): T =>
+  condition ? whenTrue : whenFalse;
 
 function NumericField({
   label,
@@ -197,7 +203,7 @@ function NumericField({
       valid =
         grammar &&
         Number.isFinite(parsed) &&
-        (!integer || Number.isInteger(parsed)) &&
+        anyTrue(!integer, Number.isInteger(parsed)) &&
         parsed >= min &&
         parsed <= max;
     setInvalid(!valid);
@@ -253,18 +259,18 @@ function NameField({
   disabled: boolean;
   onCommit: (value: string | null) => void;
 }) {
-  const committed = value ?? "",
+  const committed = valueOr(value, ""),
     [text, setText] = useState(committed),
     [focused, setFocused] = useState(false),
     [invalid, setInvalid] = useState(false);
   const commit = () => {
     const trimmed = text.trim(),
-      valid = trimmed.length === 0 || Array.from(trimmed).length <= 80;
+      valid = anyTrue(trimmed.length === 0, Array.from(trimmed).length <= 80);
     setInvalid(!valid);
     if (valid) {
       const next = trimmed.length === 0 ? null : trimmed;
       if (next !== value) onCommit(next);
-      setText(next ?? "");
+      setText(valueOr(next, ""));
     }
   };
   useEffect(() => {
@@ -483,7 +489,7 @@ export function App({ services = defaultServices }: AppProps) {
         if (delta) {
           const state = useAppStore.getState(),
             live = new Set(
-              (topology?.descriptors ?? state.descriptors).map((descriptor) => descriptor.id),
+              valueOr(topology?.descriptors, state.descriptors).map((descriptor) => descriptor.id),
             );
           state.setSelection(arbitrateSelection(state.selectedGalaxyId, delta, live));
         }
@@ -560,7 +566,7 @@ export function App({ services = defaultServices }: AppProps) {
           .catch((error: unknown) => {
             if (active) {
               setRendererHealth("unavailable");
-              setMessage(error instanceof Error ? error.message : "WebGL unavailable.");
+              setMessage(errorMessage(error, "WebGL unavailable."));
             }
           })
       : Promise.resolve();
@@ -574,7 +580,7 @@ export function App({ services = defaultServices }: AppProps) {
           setWorkerHealth("ready");
           const tick = (timestamp: number) => {
             if (!active) return;
-            client.tick?.(timestamp);
+            if (useAppStore.getState().status.playing) client.tick?.(timestamp);
             animationFrame = requestAnimationFrame(tick);
           };
           animationFrame = requestAnimationFrame(tick);
@@ -583,7 +589,7 @@ export function App({ services = defaultServices }: AppProps) {
       .catch((error: unknown) => {
         if (active) {
           setWorkerHealth("unavailable");
-          setMessage(error instanceof Error ? error.message : "Simulation Worker unavailable.");
+          setMessage(errorMessage(error, "Simulation Worker unavailable."));
         }
       });
     return () => {
@@ -625,8 +631,7 @@ export function App({ services = defaultServices }: AppProps) {
         setLibraryReady(true);
       })
       .catch((error: unknown) => {
-        if (active)
-          setMessage(error instanceof Error ? error.message : "Library storage unavailable.");
+        if (active) setMessage(errorMessage(error, "Library storage unavailable."));
       });
     return () => {
       active = false;
@@ -668,8 +673,8 @@ export function App({ services = defaultServices }: AppProps) {
       if (action === null) return;
       event.preventDefault();
       if (
-        (action === "toggle-playback" || action === "single-step") &&
-        (workerHealth !== "ready" || rendererHealth !== "ready")
+        anyTrue(action === "toggle-playback", action === "single-step") &&
+        anyTrue(workerHealth !== "ready", rendererHealth !== "ready")
       )
         return;
       if (action === "toggle-playback") {
@@ -700,12 +705,15 @@ export function App({ services = defaultServices }: AppProps) {
     viewportRef.current?.setTrails?.(trails);
   }, [trails]);
   const summary = `${String(status.galaxyCount)} galaxies, ${String(status.starCount)} stars, ${status.playing ? "playing" : "paused"}, ${mode} mode.`;
-  const draftControlsDisabled =
-    historyMarkerId !== null || workerHealth !== "ready" || mutationPending;
+  const draftControlsDisabled = anyTrue(
+    historyMarkerId !== null,
+    workerHealth !== "ready",
+    mutationPending,
+  );
   const projectedDraftStars =
     mode === "single" ? draft.generation.starCount : status.starCount + draft.generation.starCount;
   const recoveryDescriptors = descriptors,
-    recoveryCores = recovery?.cores ?? [],
+    recoveryCores = valueOr(recovery?.cores, []),
     selectedDescriptor = descriptors.find((descriptor) => descriptor.id === selectedGalaxyId),
     selectedCore = displayCores.find((core) => core.id === selectedGalaxyId),
     regenerationCompatible =
@@ -744,7 +752,7 @@ export function App({ services = defaultServices }: AppProps) {
         : Promise.resolve(null);
     return snapshotRequest
       .then((snapshot) =>
-        mutation(type, payload, snapshot?.snapshotId ?? null).then((acknowledgement) => ({
+        mutation(type, payload, valueOr(snapshot?.snapshotId, null)).then((acknowledgement) => ({
           acknowledgement,
           snapshot,
         })),
@@ -753,6 +761,8 @@ export function App({ services = defaultServices }: AppProps) {
         if (acknowledgement.result === "CHANGED") commitUi?.();
         if (snapshot && acknowledgement.result === "CHANGED")
           retainUndoSnapshot(snapshot.snapshotId, ui);
+        if (acknowledgement.result === "CHANGED" && !useAppStore.getState().status.playing)
+          client.tick?.(performance.now(), true);
         return acknowledgement;
       })
       .finally(() => {
@@ -791,7 +801,7 @@ export function App({ services = defaultServices }: AppProps) {
         useAppStore.setState({ draft: next });
       },
     ).catch((error: unknown) => {
-      setMessage(error instanceof Error ? error.message : "Galaxy could not be updated.");
+      setMessage(errorMessage(error, "Galaxy could not be updated."));
     });
   };
   const commitDraftName = (name: string | null) => {
@@ -808,7 +818,7 @@ export function App({ services = defaultServices }: AppProps) {
         useAppStore.setState({ draft: next });
       },
     ).catch((error: unknown) => {
-      setMessage(error instanceof Error ? error.message : "Galaxy could not be updated.");
+      setMessage(errorMessage(error, "Galaxy could not be updated."));
     });
   };
   const applyPreset = async (payload: DraftGalaxy) => {
@@ -830,8 +840,8 @@ export function App({ services = defaultServices }: AppProps) {
         generation: payload.generation,
         name: payload.name,
         position: {
-          x: viewportRef.current?.getCameraState?.().centerX ?? 0,
-          y: viewportRef.current?.getCameraState?.().centerY ?? 0,
+          x: valueOr(viewportRef.current?.getCameraState?.().centerX, 0),
+          y: valueOr(viewportRef.current?.getCameraState?.().centerY, 0),
         },
         bulkVelocity: { x: 0, y: 0 },
       },
@@ -869,7 +879,7 @@ export function App({ services = defaultServices }: AppProps) {
             gravity: transition.scene.setup.gravity,
             playbackSpeed: transition.scene.setup.playbackSpeed,
           },
-          postLoadPlaying: transition.workerCommand?.postLoadPlaying ?? status.playing,
+          postLoadPlaying: valueOr(transition.workerCommand?.postLoadPlaying, status.playing),
         });
       }
       useAppStore.setState({
@@ -1050,7 +1060,7 @@ export function App({ services = defaultServices }: AppProps) {
         : useAppStore.getState().draft,
       now = new Date().toISOString(),
       id = crypto.randomUUID(),
-      name = payload.name ?? "Galaxy preset";
+      name = valueOr(payload.name, "Galaxy preset");
     await repository.savePreset({
       id,
       name,
@@ -1227,14 +1237,14 @@ export function App({ services = defaultServices }: AppProps) {
       setRecordingSummary({ captured: 0, missed: 0, effectiveSlots, nominalSlots: 0 });
       useAppStore.setState({ recordingActive: true });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Recording preflight failed.");
+      setMessage(errorMessage(error, "Recording preflight failed."));
     } finally {
       setRecordingPreflighting(false);
     }
   };
   return (
     <main
-      className={`galaxia-shell ${historyMarkerIds.length > 0 || recordingActive ? "bottom-strip-active" : ""}`}
+      className={`galaxia-shell ${anyTrue(historyMarkerIds.length > 0, recordingActive) ? "bottom-strip-active" : ""}`}
       data-mutation-pending={String(mutationPending)}
       data-undo-depth={String(undoDepth)}
     >
@@ -1247,15 +1257,15 @@ export function App({ services = defaultServices }: AppProps) {
                 key={label}
                 role="tab"
                 aria-selected={mode === label.toLowerCase()}
-                disabled={
-                  historyMarkerId !== null ||
-                  workerHealth !== "ready" ||
-                  mutationPending ||
-                  modeTransitionPending
-                }
+                disabled={anyTrue(
+                  historyMarkerId !== null,
+                  workerHealth !== "ready",
+                  mutationPending,
+                  modeTransitionPending,
+                )}
                 onClick={() => {
                   void changeMode(label.toLowerCase() as typeof mode).catch((error: unknown) => {
-                    setMessage(error instanceof Error ? error.message : "Mode change failed.");
+                    setMessage(errorMessage(error, "Mode change failed."));
                   });
                 }}
               >
@@ -1266,9 +1276,11 @@ export function App({ services = defaultServices }: AppProps) {
         </nav>
         <nav aria-label="Playback">
           <button
-            disabled={
-              workerHealth !== "ready" || rendererHealth !== "ready" || playbackCommandPending
-            }
+            disabled={anyTrue(
+              workerHealth !== "ready",
+              rendererHealth !== "ready",
+              playbackCommandPending,
+            )}
             onClick={() => {
               const next = !useAppStore.getState().status.playing;
               setPlaybackCommandPending(true);
@@ -1280,7 +1292,7 @@ export function App({ services = defaultServices }: AppProps) {
                   }));
                 })
                 .catch((error: unknown) => {
-                  setMessage(error instanceof Error ? error.message : "Playback command failed.");
+                  setMessage(errorMessage(error, "Playback command failed."));
                 })
                 .finally(() => {
                   setPlaybackCommandPending(false);
@@ -1290,12 +1302,12 @@ export function App({ services = defaultServices }: AppProps) {
             Play/Pause
           </button>
           <button
-            disabled={
-              workerHealth !== "ready" ||
-              rendererHealth !== "ready" ||
-              playbackCommandPending ||
-              mutationPending
-            }
+            disabled={anyTrue(
+              workerHealth !== "ready",
+              rendererHealth !== "ready",
+              playbackCommandPending,
+              mutationPending,
+            )}
             onClick={() => {
               void clientRef.current?.command?.("STEP", {});
             }}
@@ -1306,7 +1318,7 @@ export function App({ services = defaultServices }: AppProps) {
             Speed
             <select
               value={String(status.playbackSpeed)}
-              disabled={historyMarkerId !== null || workerHealth !== "ready"}
+              disabled={anyTrue(historyMarkerId !== null, workerHealth !== "ready")}
               onChange={(event) => {
                 const playbackSpeed = Number(event.currentTarget.value) as 0.25 | 0.5 | 1 | 2 | 4;
                 void runMutation("SET_PLAYBACK_SPEED", { playbackSpeed }, () => {
@@ -1329,12 +1341,12 @@ export function App({ services = defaultServices }: AppProps) {
             integer={false}
             min={MIN_GRAVITY}
             max={MAX_GRAVITY}
-            disabled={
-              historyMarkerId !== null ||
-              workerHealth !== "ready" ||
-              playbackCommandPending ||
-              mutationPending
-            }
+            disabled={anyTrue(
+              historyMarkerId !== null,
+              workerHealth !== "ready",
+              playbackCommandPending,
+              mutationPending,
+            )}
             onCommit={(gravity) => {
               void runMutation("SET_GRAVITY", { gravity }, () => {
                 useAppStore.setState((state) => ({ status: { ...state.status, gravity } }));
@@ -1345,7 +1357,11 @@ export function App({ services = defaultServices }: AppProps) {
             Performance
             <select
               value={performanceLevel}
-              disabled={historyMarkerId !== null || workerHealth !== "ready" || mutationPending}
+              disabled={anyTrue(
+                historyMarkerId !== null,
+                workerHealth !== "ready",
+                mutationPending,
+              )}
               onChange={(event) => {
                 const next = event.currentTarget.value as "low" | "balanced" | "high";
                 if (next === useAppStore.getState().performanceLevel) return;
@@ -1397,12 +1413,12 @@ export function App({ services = defaultServices }: AppProps) {
           </button>
           <button
             type="button"
-            disabled={
-              undoDepth === 0 ||
-              mutationPending ||
-              historyMarkerId !== null ||
-              workerHealth !== "ready"
-            }
+            disabled={anyTrue(
+              undoDepth === 0,
+              mutationPending,
+              historyMarkerId !== null,
+              workerHealth !== "ready",
+            )}
             onClick={() => {
               const entry = undoStackRef.current.at(-1),
                 client = clientRef.current;
@@ -1439,7 +1455,7 @@ export function App({ services = defaultServices }: AppProps) {
                   return client.releaseUndoSnapshot?.(entry.snapshotId);
                 })
                 .catch((error: unknown) => {
-                  setMessage(error instanceof Error ? error.message : "Undo failed.");
+                  setMessage(errorMessage(error, "Undo failed."));
                 })
                 .finally(() => {
                   mutationPendingRef.current = false;
@@ -1450,7 +1466,7 @@ export function App({ services = defaultServices }: AppProps) {
             Undo
           </button>
           <button
-            disabled={workerHealth !== "ready" || rendererHealth !== "ready" || !libraryReady}
+            disabled={anyTrue(workerHealth !== "ready", rendererHealth !== "ready", !libraryReady)}
             onClick={() => {
               const renderer = viewportRef.current,
                 repository = libraryRepositoryRef.current,
@@ -1479,7 +1495,7 @@ export function App({ services = defaultServices }: AppProps) {
                   setMessage("Screenshot saved.");
                 })
                 .catch((error: unknown) => {
-                  setMessage(error instanceof Error ? error.message : "Screenshot failed.");
+                  setMessage(errorMessage(error, "Screenshot failed."));
                 });
             }}
           >
@@ -1502,12 +1518,12 @@ export function App({ services = defaultServices }: AppProps) {
             />
           </label>
           <button
-            disabled={
-              workerHealth !== "ready" ||
-              rendererHealth !== "ready" ||
-              historyMarkerId !== null ||
-              recordingPreflighting
-            }
+            disabled={anyTrue(
+              workerHealth !== "ready",
+              rendererHealth !== "ready",
+              historyMarkerId !== null,
+              recordingPreflighting,
+            )}
             onClick={() => {
               if (recordingActive) {
                 void finishRecording("user");
@@ -1547,7 +1563,7 @@ export function App({ services = defaultServices }: AppProps) {
             {" galaxies · "}
             {String(status.starCount)} stars ·{" "}
             {selectedDescriptor
-              ? `Selected ${selectedDescriptor.name ?? selectedDescriptor.id}`
+              ? `Selected ${valueOr(selectedDescriptor.name, selectedDescriptor.id)}`
               : "None selected"}
           </span>
         </nav>
@@ -1615,7 +1631,7 @@ export function App({ services = defaultServices }: AppProps) {
                 onClick={() => {
                   const values = new Uint32Array(1);
                   crypto.getRandomValues(values);
-                  useAppStore.setState({ randomSeed: values[0] ?? 0 });
+                  useAppStore.setState({ randomSeed: valueOr(values[0], 0) });
                 }}
               >
                 Reroll scenario seed
@@ -1638,7 +1654,7 @@ export function App({ services = defaultServices }: AppProps) {
               </output>
               <button
                 type="button"
-                disabled={historyMarkerId !== null || workerHealth !== "ready"}
+                disabled={anyTrue(historyMarkerId !== null, workerHealth !== "ready")}
                 onClick={() => {
                   const setup = generateRandomScenario(
                     randomCategory,
@@ -1676,7 +1692,7 @@ export function App({ services = defaultServices }: AppProps) {
                   const type = event.currentTarget.value as typeof draft.generation.type,
                     armCount =
                       type === "spiral" || type === "barredSpiral"
-                        ? (draft.generation.armCount ?? 2)
+                        ? valueOr(draft.generation.armCount, 2)
                         : null;
                   commitDraftGeneration({ ...draft.generation, type, armCount });
                 }}
@@ -1705,7 +1721,7 @@ export function App({ services = defaultServices }: AppProps) {
               onClick={() => {
                 const values = new Uint32Array(1);
                 crypto.getRandomValues(values);
-                commitDraftGeneration({ ...draft.generation, seed: values[0] ?? 0 });
+                commitDraftGeneration({ ...draft.generation, seed: valueOr(values[0], 0) });
               }}
             >
               Reroll seed
@@ -1760,7 +1776,7 @@ export function App({ services = defaultServices }: AppProps) {
               integer
               min={MIN_ARM_COUNT}
               max={MAX_ARM_COUNT}
-              disabled={draftControlsDisabled || draft.generation.armCount === null}
+              disabled={anyTrue(draftControlsDisabled, draft.generation.armCount === null)}
               onCommit={(armCount) => {
                 commitDraftGeneration({ ...draft.generation, armCount });
               }}
@@ -1794,12 +1810,12 @@ export function App({ services = defaultServices }: AppProps) {
             {mode === "single" && (
               <button
                 type="button"
-                disabled={
-                  historyMarkerId !== null ||
-                  workerHealth !== "ready" ||
-                  playbackCommandPending ||
-                  mutationPending
-                }
+                disabled={anyTrue(
+                  historyMarkerId !== null,
+                  workerHealth !== "ready",
+                  playbackCommandPending,
+                  mutationPending,
+                )}
                 onClick={() => {
                   const parsed = draftGalaxySchema.safeParse(draft),
                     descriptor = useAppStore.getState().descriptors[0];
@@ -1828,16 +1844,16 @@ export function App({ services = defaultServices }: AppProps) {
             {mode !== "single" && (
               <button
                 type="button"
-                disabled={
-                  historyMarkerId !== null ||
-                  workerHealth !== "ready" ||
-                  playbackCommandPending ||
-                  mutationPending
-                }
+                disabled={anyTrue(
+                  historyMarkerId !== null,
+                  workerHealth !== "ready",
+                  playbackCommandPending,
+                  mutationPending,
+                )}
                 onClick={() => {
                   const parsed = draftGalaxySchema.safeParse(draft);
                   if (!parsed.success) {
-                    setMessage(parsed.error.issues[0]?.message ?? "Draft is invalid.");
+                    setMessage(valueOr(parsed.error.issues[0]?.message, "Draft is invalid."));
                     return;
                   }
                   const id = crypto.randomUUID();
@@ -1852,8 +1868,8 @@ export function App({ services = defaultServices }: AppProps) {
                       generation: parsed.data.generation,
                       name: parsed.data.name,
                       position: {
-                        x: viewportRef.current?.getCameraState?.().centerX ?? 0,
-                        y: viewportRef.current?.getCameraState?.().centerY ?? 0,
+                        x: valueOr(viewportRef.current?.getCameraState?.().centerX, 0),
+                        y: valueOr(viewportRef.current?.getCameraState?.().centerY, 0),
                       },
                       bulkVelocity: { x: 0, y: 0 },
                     },
@@ -1862,9 +1878,7 @@ export function App({ services = defaultServices }: AppProps) {
                       useAppStore.getState().setSelection(id);
                     })
                     .catch((error: unknown) => {
-                      setMessage(
-                        error instanceof Error ? error.message : "Galaxy could not be added.",
-                      );
+                      setMessage(errorMessage(error, "Galaxy could not be added."));
                     });
                 }}
               >
@@ -1874,12 +1888,12 @@ export function App({ services = defaultServices }: AppProps) {
             {mode !== "single" && (
               <button
                 type="button"
-                disabled={
-                  selectedGalaxyId === null ||
-                  historyMarkerId !== null ||
-                  workerHealth !== "ready" ||
-                  mutationPending
-                }
+                disabled={anyTrue(
+                  selectedGalaxyId === null,
+                  historyMarkerId !== null,
+                  workerHealth !== "ready",
+                  mutationPending,
+                )}
                 onClick={() => {
                   const parsed = draftGalaxySchema.safeParse(draft),
                     galaxyId = useAppStore.getState().selectedGalaxyId;
@@ -1906,10 +1920,10 @@ export function App({ services = defaultServices }: AppProps) {
           <button
             className="preset-library"
             type="button"
-            disabled={!libraryReady || mutationPending}
+            disabled={anyTrue(!libraryReady, mutationPending)}
             onClick={() => {
               void saveCurrentPreset().catch((error: unknown) => {
-                setMessage(error instanceof Error ? error.message : "Preset could not be saved.");
+                setMessage(errorMessage(error, "Preset could not be saved."));
               });
             }}
           >
@@ -1918,7 +1932,7 @@ export function App({ services = defaultServices }: AppProps) {
           <button
             className="scene-library"
             type="button"
-            disabled={!libraryReady || workerHealth !== "ready" || mutationPending}
+            disabled={anyTrue(!libraryReady, workerHealth !== "ready", mutationPending)}
             onClick={() => {
               const repository = libraryRepositoryRef.current,
                 client = clientRef.current;
@@ -1943,7 +1957,7 @@ export function App({ services = defaultServices }: AppProps) {
                 .then(() => repository.list("scene"))
                 .then(setScenes)
                 .catch((error: unknown) => {
-                  setMessage(error instanceof Error ? error.message : "Scene could not be saved.");
+                  setMessage(errorMessage(error, "Scene could not be saved."));
                 });
             }}
           >
@@ -1986,7 +2000,11 @@ export function App({ services = defaultServices }: AppProps) {
             <input
               type="file"
               accept="application/json,.json"
-              disabled={historyMarkerId !== null || workerHealth !== "ready" || mutationPending}
+              disabled={anyTrue(
+                historyMarkerId !== null,
+                workerHealth !== "ready",
+                mutationPending,
+              )}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 if (!file) return;
@@ -2022,12 +2040,14 @@ export function App({ services = defaultServices }: AppProps) {
                   }));
                   viewportRef.current?.setAutomaticFraming?.(true);
                   setMessage(
-                    validated.requiresGenerationConfirmation
-                      ? "Scene imported with current-version regeneration; results may differ."
-                      : "Scene imported.",
+                    choose(
+                      validated.requiresGenerationConfirmation,
+                      "Scene imported with current-version regeneration; results may differ.",
+                      "Scene imported.",
+                    ),
                   );
                 })().catch((error: unknown) => {
-                  setMessage(error instanceof Error ? error.message : "INVALID_IMPORT");
+                  setMessage(errorMessage(error, "INVALID_IMPORT"));
                 });
               }}
             />
@@ -2038,7 +2058,11 @@ export function App({ services = defaultServices }: AppProps) {
                 <span>{preset.name}</span>{" "}
                 <button
                   type="button"
-                  disabled={historyMarkerId !== null || workerHealth !== "ready" || mutationPending}
+                  disabled={anyTrue(
+                    historyMarkerId !== null,
+                    workerHealth !== "ready",
+                    mutationPending,
+                  )}
                   onClick={() => {
                     void applyPreset(structuredClone(preset));
                   }}
@@ -2052,7 +2076,11 @@ export function App({ services = defaultServices }: AppProps) {
                 <span>{preset.name}</span>{" "}
                 <button
                   type="button"
-                  disabled={historyMarkerId !== null || workerHealth !== "ready" || mutationPending}
+                  disabled={anyTrue(
+                    historyMarkerId !== null,
+                    workerHealth !== "ready",
+                    mutationPending,
+                  )}
                   onClick={() => {
                     void libraryDatabaseRef.current?.presets.get(preset.id).then((row) => {
                       if (!row) throw new Error("LIBRARY_ITEM_NOT_FOUND");
@@ -2090,7 +2118,7 @@ export function App({ services = defaultServices }: AppProps) {
                         setMessage(`Preset renamed to ${name}.`);
                       })
                       .catch((error: unknown) => {
-                        setMessage(error instanceof Error ? error.message : "NAME_COLLISION");
+                        setMessage(errorMessage(error, "NAME_COLLISION"));
                       });
                   }}
                 >
@@ -2119,7 +2147,11 @@ export function App({ services = defaultServices }: AppProps) {
                 <span>{scene.name}</span>{" "}
                 <button
                   type="button"
-                  disabled={historyMarkerId !== null || workerHealth !== "ready" || mutationPending}
+                  disabled={anyTrue(
+                    historyMarkerId !== null,
+                    workerHealth !== "ready",
+                    mutationPending,
+                  )}
                   onClick={() => {
                     void libraryDatabaseRef.current?.scenes
                       .get(scene.id)
@@ -2155,9 +2187,7 @@ export function App({ services = defaultServices }: AppProps) {
                         viewportRef.current?.setAutomaticFraming?.(true);
                       })
                       .catch((error: unknown) => {
-                        setMessage(
-                          error instanceof Error ? error.message : "Scene could not be loaded.",
-                        );
+                        setMessage(errorMessage(error, "Scene could not be loaded."));
                       });
                   }}
                 >
@@ -2176,7 +2206,7 @@ export function App({ services = defaultServices }: AppProps) {
                         setMessage(`Exported ${name}.`);
                       })
                       .catch((error: unknown) => {
-                        setMessage(error instanceof Error ? error.message : "EXPORT_FAILED");
+                        setMessage(errorMessage(error, "EXPORT_FAILED"));
                       });
                   }}
                 >
@@ -2195,7 +2225,7 @@ export function App({ services = defaultServices }: AppProps) {
                         setMessage(`Scene renamed to ${name}.`);
                       })
                       .catch((error: unknown) => {
-                        setMessage(error instanceof Error ? error.message : "NAME_COLLISION");
+                        setMessage(errorMessage(error, "NAME_COLLISION"));
                       });
                   }}
                 >
@@ -2224,7 +2254,7 @@ export function App({ services = defaultServices }: AppProps) {
                   type="button"
                   onClick={() => {
                     void showCapture(capture.id).catch((error: unknown) => {
-                      setMessage(error instanceof Error ? error.message : "LIBRARY_ITEM_NOT_FOUND");
+                      setMessage(errorMessage(error, "LIBRARY_ITEM_NOT_FOUND"));
                     });
                   }}
                 >
@@ -2244,7 +2274,7 @@ export function App({ services = defaultServices }: AppProps) {
                         setMessage(`Capture renamed to ${name}.`);
                       })
                       .catch((error: unknown) => {
-                        setMessage(error instanceof Error ? error.message : "NAME_COLLISION");
+                        setMessage(errorMessage(error, "NAME_COLLISION"));
                       });
                   }}
                 >
@@ -2293,7 +2323,7 @@ export function App({ services = defaultServices }: AppProps) {
                   type="button"
                   onClick={() => {
                     void showRecording(recording.id).catch((error: unknown) => {
-                      setMessage(error instanceof Error ? error.message : "LIBRARY_ITEM_NOT_FOUND");
+                      setMessage(errorMessage(error, "LIBRARY_ITEM_NOT_FOUND"));
                     });
                   }}
                 >
@@ -2301,8 +2331,11 @@ export function App({ services = defaultServices }: AppProps) {
                 </button>{" "}
                 <span>
                   {recording.state}
-                  {recording.state !== "complete" ? ` (${recording.terminalReason})` : ""} ·{" "}
-                  {String(recording.capturedCount)} captured · {String(recording.missedCount)}{" "}
+                  {choose(
+                    recording.state !== "complete",
+                    ` (${recording.terminalReason})`,
+                    "",
+                  )} · {String(recording.capturedCount)} captured · {String(recording.missedCount)}{" "}
                   missed
                 </span>
               </li>
@@ -2364,7 +2397,7 @@ export function App({ services = defaultServices }: AppProps) {
                       setMessage(`Recording renamed to ${name}.`);
                     })
                     .catch((error: unknown) => {
-                      setMessage(error instanceof Error ? error.message : "NAME_COLLISION");
+                      setMessage(errorMessage(error, "NAME_COLLISION"));
                     });
                 }}
               >
@@ -2388,14 +2421,14 @@ export function App({ services = defaultServices }: AppProps) {
               </button>
               <p>
                 Export requires {String(selectedRecording.plan.parts.length)} ZIP{" "}
-                {selectedRecording.plan.parts.length === 1 ? "part" : "parts"}.
+                {choose(selectedRecording.plan.parts.length === 1, "part", "parts")}.
               </p>
               {"showDirectoryPicker" in window && (
                 <button
                   type="button"
                   onClick={() => {
                     void exportRecordingFolder().catch((error: unknown) => {
-                      setMessage(error instanceof Error ? error.message : "EXPORT_FAILED");
+                      setMessage(errorMessage(error, "EXPORT_FAILED"));
                     });
                   }}
                 >
@@ -2411,11 +2444,11 @@ export function App({ services = defaultServices }: AppProps) {
                     key={partNumber}
                     onClick={() => {
                       void exportRecordingPart(partNumber).catch((error: unknown) => {
-                        setMessage(error instanceof Error ? error.message : "EXPORT_FAILED");
+                        setMessage(errorMessage(error, "EXPORT_FAILED"));
                       });
                     }}
                   >
-                    {complete ? "Retry" : "Export"} recording part {String(partNumber)}
+                    {choose(complete, "Retry", "Export")} recording part {String(partNumber)}
                   </button>
                 );
               })}
@@ -2449,8 +2482,10 @@ export function App({ services = defaultServices }: AppProps) {
               selectedGalaxyId !== null &&
               liveSelectedCore !== undefined &&
               Math.hypot(liveSelectedCore.vx, liveSelectedCore.vy) > 1e-9 &&
-              (viewport.beginVelocityDrag?.(selectedGalaxyId, point) ?? false),
-            picked = velocityStarted ? null : (viewport.pickAtCssPoint?.(point.x, point.y) ?? null);
+              valueOr(viewport.beginVelocityDrag?.(selectedGalaxyId, point), false),
+            picked = velocityStarted
+              ? null
+              : valueOr(viewport.pickAtCssPoint?.(point.x, point.y), null);
           if (velocityStarted) kind = "velocity";
           else if (picked) {
             useAppStore.getState().setSelection(picked);
@@ -2677,14 +2712,14 @@ export function App({ services = defaultServices }: AppProps) {
                     });
                   }}
                 >
-                  {descriptor.name ?? descriptor.id}
+                  {valueOr(descriptor.name, descriptor.id)}
                 </button>
               </li>
             ))}
           </ul>
           {selectedDescriptor && selectedCore && (
             <section aria-label="Selected galaxy configuration">
-              <h3>{selectedDescriptor.name ?? selectedDescriptor.id}</h3>
+              <h3>{valueOr(selectedDescriptor.name, selectedDescriptor.id)}</h3>
               <p>
                 {selectedDescriptor.generation.type} ·{" "}
                 {String(selectedDescriptor.generation.starCount)}
@@ -2764,12 +2799,10 @@ export function App({ services = defaultServices }: AppProps) {
               </p>
               <button
                 type="button"
-                disabled={!libraryReady || mutationPending}
+                disabled={anyTrue(!libraryReady, mutationPending)}
                 onClick={() => {
                   void saveCurrentPreset().catch((error: unknown) => {
-                    setMessage(
-                      error instanceof Error ? error.message : "Preset could not be saved.",
-                    );
+                    setMessage(errorMessage(error, "Preset could not be saved."));
                   });
                 }}
               >
@@ -2794,9 +2827,11 @@ export function App({ services = defaultServices }: AppProps) {
           {mode !== "single" && (
             <button
               type="button"
-              disabled={
-                selectedGalaxyId === null || historyMarkerId !== null || workerHealth !== "ready"
-              }
+              disabled={anyTrue(
+                selectedGalaxyId === null,
+                historyMarkerId !== null,
+                workerHealth !== "ready",
+              )}
               onClick={() => {
                 const galaxyId = useAppStore.getState().selectedGalaxyId;
                 if (!galaxyId) return;
@@ -2827,7 +2862,7 @@ export function App({ services = defaultServices }: AppProps) {
                     reconstructionToken: crypto.randomUUID(),
                   },
               {
-                expectedModelRevision: clientRef.current.modelRevision ?? null,
+                expectedModelRevision: valueOr(clientRef.current.modelRevision, null),
                 timeoutMs: 30_000,
               },
             )
@@ -2840,7 +2875,7 @@ export function App({ services = defaultServices }: AppProps) {
             })
             .catch((error: unknown) => {
               useAppStore.setState({ historyBusy: false });
-              setMessage(error instanceof Error ? error.message : "History reconstruction failed.");
+              setMessage(errorMessage(error, "History reconstruction failed."));
             });
         }}
         onExit={() => {

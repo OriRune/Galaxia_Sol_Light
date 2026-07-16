@@ -15,12 +15,14 @@ test("R-START-01 exact First Light startup and globals", async ({ page }) => {
 });
 
 test("R-PLAY-01 play pause remains responsive", async ({ page }) => {
-  await page.goto("/?fixture=low");
+  test.setTimeout(90_000);
+  await page.goto("/");
+  await expect(page.getByText("Simulation: ready")).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Play/Pause" }).click();
-  await expect(page.getByText(/Paused.*1 galaxies.*500 stars/)).toBeVisible();
+  await expect(page.getByText(/Paused.*1 galaxies.*30000 stars/)).toBeVisible({ timeout: 30_000 });
   await expect(page.getByLabel("Gravity")).toBeEnabled({ timeout: 30_000 });
   await page.getByRole("button", { name: "Play/Pause" }).click();
-  await expect(page.getByText(/Playing.*1 galaxies.*500 stars/)).toBeVisible({
+  await expect(page.getByText(/Playing.*1 galaxies.*30000 stars/)).toBeVisible({
     timeout: 30_000,
   });
 });

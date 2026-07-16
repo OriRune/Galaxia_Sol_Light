@@ -1,6 +1,16 @@
 import { expect, it } from "vitest";
 import { Engine } from "../../src/simulation/engine";
 import type { EngineSetup, GalaxyType } from "../../src/domain/types";
+import { DEFAULT_ENGINE_SETUP } from "../../src/domain/defaults";
+
+it("commits one production First Light step without starving Worker commands", () => {
+  const engine = new Engine(structuredClone(DEFAULT_ENGINE_SETUP), true),
+    start = performance.now();
+  expect(engine.step(1 / 60)).toBe(true);
+  const elapsed = performance.now() - start;
+  console.info(`FIRST_LIGHT_STEP_MS ${elapsed.toFixed(1)}`);
+  expect(elapsed).toBeLessThan(5_000);
+});
 
 it("constructs the exact High engine within the reconstruction timeout", () => {
   const types: GalaxyType[] = ["spiral", "barredSpiral", "elliptical", "irregular", "dwarf"];

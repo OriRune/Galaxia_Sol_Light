@@ -16,7 +16,7 @@ test("hosted startup, Worker, persistence, capture, recording, and rediscovery",
   await page.getByRole("tab", { name: "Presets" }).click();
   await page.getByRole("button", { name: "Save preset" }).click();
   await expect(
-    page.getByRole("list", { name: "Saved presets" }).getByText("First Light"),
+    page.getByRole("list", { name: "Saved presets" }).getByText("First Light", { exact: true }),
   ).toBeVisible();
   const presetDownloadPromise = page.waitForEvent("download");
   await page
@@ -28,9 +28,12 @@ test("hosted startup, Worker, persistence, capture, recording, and rediscovery",
   expect(presetDownload.suggestedFilename()).toBe("First Light.galaxia-preset.json");
   if (!presetPath) throw new Error("Preset export did not produce a local download.");
   await page.getByLabel("Import preset").setInputFiles(presetPath);
-  await expect(page.locator(".viewport-message")).toHaveText("Imported preset as First Light (2).", {
-    timeout: 45_000,
-  });
+  await expect(page.locator(".viewport-message")).toHaveText(
+    "Imported preset as First Light (2).",
+    {
+      timeout: 45_000,
+    },
+  );
   await expect(page.getByRole("list", { name: "Saved presets" }).getByRole("listitem")).toHaveCount(
     7,
   );
@@ -80,7 +83,7 @@ test("hosted startup, Worker, persistence, capture, recording, and rediscovery",
   await page.reload();
   await page.getByRole("tab", { name: "Presets" }).click();
   await expect(
-    page.getByRole("list", { name: "Saved presets" }).getByText("First Light"),
+    page.getByRole("list", { name: "Saved presets" }).getByText("First Light", { exact: true }),
   ).toBeVisible();
   await page.getByRole("tab", { name: "Scenes" }).click();
   await expect(page.getByRole("list", { name: "Saved scenes" }).getByRole("listitem")).toHaveCount(

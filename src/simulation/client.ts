@@ -82,6 +82,7 @@ export class SimulationClient {
   private heartbeatOutstanding = false;
   private heartbeatFailures = 0;
   private visible = true;
+  private lastTickSentAt = Number.NEGATIVE_INFINITY;
 
   constructor(
     private readonly createWorker: () => Worker = () =>
@@ -242,18 +243,21 @@ export class SimulationClient {
       }, options.timeoutMs ?? ORDINARY_TIMEOUT_MS);
       this.pending.set(requestId, { resolve, reject, timeout, mutation, commandType: type });
       if (type === "PLAY" || type === "PAUSE" || type === "SET_PLAYBACK_SPEED") {
-        this.tick(performance.now());
+        this.tick(performance.now(), true);
       }
       worker.postMessage(request);
     });
   }
 
-  tick(nowMs: number) {
+  tick(nowMs: number, force = false) {
+    if (!force && nowMs - this.lastTickSentAt < 1000 / 30) return;
+    this.lastTickSentAt = nowMs;
     this.signal({ protocolVersion: PROTOCOL_VERSION, type: "TICK", payload: { nowMs } });
   }
 
   setVisibility(visible: boolean) {
     this.visible = visible;
+    this.lastTickSentAt = Number.NEGATIVE_INFINITY;
     this.signal({
       protocolVersion: PROTOCOL_VERSION,
       type: "SET_VISIBILITY",
